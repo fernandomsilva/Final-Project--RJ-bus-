@@ -1,0 +1,223 @@
+  
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Neighborhood</title>
+    <style>
+      html, body, #map-canvas {
+        height: 100%;
+        margin: 0px;
+        padding: 0px
+      }
+    </style>
+    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>
+	<script src="new_points.js"></script>
+	<script src="bus_density.js"></script>
+	<script src="RainbowVis.js"></script>
+    <script>
+// This example creates circles on the map, representing
+// populations in North America.
+
+// First, create an object containing LatLng and population for each city.
+/*var citymap = {};
+citymap['chicago'] = {
+  center: new google.maps.LatLng(41.878113, -87.629798),
+  population: 2714856
+};
+citymap['newyork'] = {
+  center: new google.maps.LatLng(40.714352, -74.005973),
+  population: 8405837
+};
+citymap['losangeles'] = {
+  center: new google.maps.LatLng(34.052234, -118.243684),
+  population: 3857799
+};
+citymap['vancouver'] = {
+  center: new google.maps.LatLng(49.25, -123.1),
+  population: 603502
+};
+citymap['teste'] = {
+  center: new google.maps.LatLng(25.774252, -80.190262),
+  population: 0.15
+};*/
+
+var cityCircle;
+
+function initialize() {
+  // Create the map.
+
+	var mapOptions = {
+		zoom: 13,
+		center: new google.maps.LatLng(map_center[0], map_center[1]),
+		mapTypeId: google.maps.MapTypeId.TERRAIN
+	};
+
+	var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+
+	// Construct the circle for each value in citymap.
+  // Note: We scale the area of the circle based on the population.
+  //for (var city in citymap) {
+  //console.log(map_center);
+  
+	var rainbow = new Rainbow(); 
+	rainbow.setNumberRange(min_density, max_density);
+	rainbow.setSpectrum('red', 'blue');
+
+	var i = 0;
+	var neighborhoods = new Array();
+	var temp = new Array();
+	var color;
+	for (key in points)
+	{
+		for (i = 0; i < Object.keys(points[key]).length; i++)
+		{
+			temp[i] = new google.maps.LatLng(points[key][i][0], points[key][i][1]);
+		}
+
+		if (typeof density[key] === 'undefined')
+		{
+			color = "black";
+		}
+		else
+		{
+			color = "#" + rainbow.colourAt(density[key]);
+		}
+		console.log(color);
+		neighborhoods[key] = new google.maps.Polygon({
+			path: temp,
+			geodesic: true,
+			strokeColor: "#FF0000",
+			strokeOpacity: 1.0,
+			strokeWeight: 2,
+			fillColor: color,
+			fillOpacity: 1
+		});		
+		neighborhoods[key].setMap(map);
+		temp.length = 0;
+	}
+//	var tijuca = new Array();
+//	for (i = 0; i < Object.keys(tijuca_points).length; i++) {
+//		tijuca[i] = new google.maps.LatLng(tijuca_points[i][0], tijuca_points[i][1]);
+		//console.log(points[i]);
+		/*var populationOptions = {
+			strokeColor: '#FF0000',
+			strokeOpacity: 0.8,
+			strokeWeight: 2,
+			fillColor: '#FF0000',
+			fillOpacity: 0.35,
+			map: map,
+			//center: citymap[city].center,
+			center: new google.maps.LatLng(points[i][0], points[i][1]),
+			radius: Math.sqrt(points[i][2]) * 100
+			//radius: Math.sqrt(citymap[city].population) * 100
+		};
+		// Add the circle for this city to the map.
+		cityCircle = new google.maps.Circle(populationOptions);*/
+//	}
+/*	var tijucaPath = new google.maps.Polygon({
+		path: tijuca,
+		geodesic: true,
+		strokeColor: "#FF0000",
+		strokeOpacity: 1.0,
+		strokeWeight: 2,
+		fillColor: "#FF0000",
+		fillOpacity: 0.2
+	});
+	tijucaPath.setMap(map);
+	var andarai = new Array();
+	for (i = 0; i < Object.keys(andarai_points).length; i++) {
+		andarai[i] = new google.maps.LatLng(andarai_points[i][0], andarai_points[i][1]);
+*/		//console.log(points[i]);
+		/*var populationOptions = {
+			strokeColor: '#FF0000',
+			strokeOpacity: 0.8,
+			strokeWeight: 2,
+			fillColor: '#FF0000',
+			fillOpacity: 0.35,
+			map: map,
+			//center: citymap[city].center,
+			center: new google.maps.LatLng(points[i][0], points[i][1]),
+			radius: Math.sqrt(points[i][2]) * 100
+			//radius: Math.sqrt(citymap[city].population) * 100
+		};
+		// Add the circle for this city to the map.
+		cityCircle = new google.maps.Circle(populationOptions);*/
+/*	}
+	var andaraiPath = new google.maps.Polygon({
+		path: andarai,
+		geodesic: true,
+		strokeColor: "#FF0000",
+		strokeOpacity: 1.0,
+		strokeWeight: 2,
+		fillColor: "#FF0000",
+		fillOpacity: 0.2
+	});
+	andaraiPath.setMap(map);
+
+	google.maps.event.addListener(tijucaPath, 'click', function (event) {
+		//InTijuca(event.latLng, points);  
+		tijucaPath.setOptions({fillOpacity: 0.7});
+	});
+	google.maps.event.addListener(tijucaPath, 'rightclick', function (event) {
+		//InTijuca(event.latLng, points);  
+		tijucaPath.setOptions({fillOpacity: 0.2});
+	});
+	google.maps.event.addListener(andaraiPath, 'click', function (event) {
+		andaraiPath.setOptions({fillOpacity: 0.7});
+	});
+	google.maps.event.addListener(andaraiPath, 'rightclick', function (event) {
+		andaraiPath.setOptions({fillOpacity: 0.2});
+	});*/
+}
+
+google.maps.event.addDomListener(window, 'load', initialize);
+
+/*function InTijuca(pnt, nbh) {
+	var coordsLabel = document.getElementById("tdCursor");
+	var lat = pnt.lat();
+	lat = lat.toFixed(4);
+	var lng = pnt.lng();
+	lng = lng.toFixed(4);
+	
+	var point = new Array();
+	point[0] = lat;
+	point[1] = lng;
+	
+	console.log(pointIsInNeighborhood(point, nbh));
+	//console.log("Latitude: " + lat + "  Longitude: " + lng);
+}
+
+function pointIsInNeighborhood(point, polygon_point_list) {
+	var c = false;
+	var len = Object.keys(polygon_point_list).length;
+	var j = len - 1;
+	var i;
+	var edge_p1 = new Array();
+	var edge_p2 = new Array();
+	for (i=0; i<len; i++) {
+		edge_p1[0] = polygon_point_list[j][0];
+		edge_p1[1] = polygon_point_list[j][1];
+		edge_p2[0] = polygon_point_list[i][0];
+		edge_p2[1] = polygon_point_list[i][1];
+		
+		if ((edge_p2[1] > point[1]) != (edge_p1[1] > point[1])) {
+			if (point[0] < (edge_p1[0]-edge_p2[0]) * (point[1]-edge_p2[1]) / (edge_p1[1]-edge_p2[1]) + edge_p2[0]) {
+				c = !c;
+			}
+		}
+		
+		j = i;
+	}
+
+	return c;
+}*/
+
+
+</script>
+  </head>
+  <body>
+    <div id="map-canvas"></div>
+  </body>
+</html>
