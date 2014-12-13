@@ -18,15 +18,10 @@
 	<script src="RainbowVis.js"></script>
     <script>
 
-var cold_gradient_min_color = 'red';
-var cold_gradient_median_color = 'orange';
-var cold_gradient_max_color = 'blue';
 var gradient_min_color = 'yellow';
 var gradient_max_color = 'red';
 	
 var map;
-
-var infowindow;
 
 var neighborhoods = new Array();
 var train_subway_markers = new Array();
@@ -36,7 +31,6 @@ var train_markers_visible = false;
 var subway_markers_visible = false;
 
 var rainbow = new Rainbow();
-var rainbow_cold = new Rainbow();
 
 rainbow.setNumberRange(min_density, max_density);
 rainbow.setSpectrum(gradient_min_color, gradient_max_color);
@@ -111,45 +105,6 @@ function WithMaxControl(controlDiv, map) {
 		rainbow.setSpectrum(gradient_min_color, gradient_max_color);
 		
 		changePolygonColor();
-	});
-}
-
-function PopulationControl(controlDiv, map) {
-
-	// Set CSS styles for the DIV containing the control
-	// Setting padding to 5 px will offset the control
-	// from the edge of the map
-	controlDiv.style.padding = '5px';
-
-	// Set CSS for the control border
-	var controlUI = document.createElement('div');
-	controlUI.style.backgroundColor = 'white';
-	controlUI.style.borderStyle = 'solid';
-	controlUI.style.borderWidth = '2px';
-	controlUI.style.cursor = 'pointer';
-	controlUI.style.textAlign = 'center';
-	controlUI.title = 'Click to set the heat map of population/bus lines';
-	controlDiv.appendChild(controlUI);
-
-	// Set CSS for the control interior
-	var controlText = document.createElement('div');
-	controlText.style.fontFamily = 'Arial,sans-serif';
-	controlText.style.fontSize = '12px';
-	controlText.style.paddingLeft = '4px';
-	controlText.style.paddingRight = '4px';
-	controlText.innerHTML = '<b>Population</b>';
-	controlUI.appendChild(controlText);
-
-	// Setup the click event listeners: simply set the map to
-	// Chicago
-	google.maps.event.addDomListener(controlUI, 'click', function() {
-		rainbow_cold.setNumberRange(min_population_density, population_median);
-		rainbow_cold.setSpectrum(cold_gradient_min_color, cold_gradient_median_color);
-
-		rainbow.setNumberRange(population_median, max_population_density);
-		rainbow.setSpectrum(cold_gradient_median_color, cold_gradient_max_color);
-		
-		changePolygonColorCold();
 	});
 }
 
@@ -253,11 +208,9 @@ function SubwayControl(controlDiv, map) {
 
 var addListenersOnPolygon = function(polygon) {
 	google.maps.event.addListener(polygon, 'click', function (event) {
-		//console.log(polygon.neighborhoodID);
-		infowindow.setContent(polygon.neighborhoodID + "<p>Bus Lines: " + density[polygon.neighborhoodID] + "<p>Population/Bus L.: " + population_per_bus_lines[polygon.neighborhoodID]);
-		infowindow.setPosition(event.latLng);
-		infowindow.open(map);
-	});  
+		polygon.setOptions();
+		calculatePolygonBusConnection();
+	});
 }
 
 function drawPolygons()
@@ -330,32 +283,6 @@ function changePolygonColor()
 	}
 }
 
-function changePolygonColorCold()
-{
-	var color;
-
-	for (key in neighborhoods)
-	{
-		if (typeof population_per_bus_lines[key] === 'undefined')
-		{
-			color = "black";
-		}
-		else
-		{
-			if (population_per_bus_lines[key] > population_median)
-			{
-				color = "#" + rainbow.colourAt(population_per_bus_lines[key]);
-			}
-			else
-			{
-				color = "#" + rainbow_cold.colourAt(population_per_bus_lines[key]);
-			}
-		}
-		
-		neighborhoods[key].setOptions({strokeColor: color, fillColor: color});
-	}
-}
-
 function initialize() {
   // Create the map.
 
@@ -370,7 +297,6 @@ function initialize() {
 	var ButtonsControlDiv = document.createElement('div');
 	var NoMaxControl = new WithoutMaxControl(ButtonsControlDiv, map);
 	var MaxControl = new WithMaxControl(ButtonsControlDiv, map);
-	var PopControl = new PopulationControl(ButtonsControlDiv, map);
 	var TrainMarkersControle = new TrainControl(ButtonsControlDiv, map);
 	var SubwayMarkersControle = new SubwayControl(ButtonsControlDiv, map);
 	
@@ -399,11 +325,7 @@ function initialize() {
 	
 	infowindow = new google.maps.InfoWindow({
 		content: ''
-	});
-	
-	/*google.maps.event.addListener(andaraiPath, 'rightclick', function (event) {
-		andaraiPath.setOptions({fillOpacity: 0.2});
-	});*/
+	});	
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
