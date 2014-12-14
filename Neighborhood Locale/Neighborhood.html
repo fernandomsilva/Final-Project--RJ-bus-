@@ -42,13 +42,8 @@ rainbow.setNumberRange(min_density, max_density);
 rainbow.setSpectrum(gradient_min_color, gradient_max_color);
 
 function WithoutMaxControl(controlDiv, map) {
-
-	// Set CSS styles for the DIV containing the control
-	// Setting padding to 5 px will offset the control
-	// from the edge of the map
 	controlDiv.style.padding = '5px';
 
-	// Set CSS for the control border
 	var controlUI = document.createElement('div');
 	controlUI.style.backgroundColor = 'white';
 	controlUI.style.borderStyle = 'solid';
@@ -58,7 +53,6 @@ function WithoutMaxControl(controlDiv, map) {
 	controlUI.title = 'Click to set the heat map without the max';
 	controlDiv.appendChild(controlUI);
 
-	// Set CSS for the control interior
 	var controlText = document.createElement('div');
 	controlText.style.fontFamily = 'Arial,sans-serif';
 	controlText.style.fontSize = '12px';
@@ -67,8 +61,6 @@ function WithoutMaxControl(controlDiv, map) {
 	controlText.innerHTML = '<b>noMAX</b>';
 	controlUI.appendChild(controlText);
 
-	// Setup the click event listeners: simply set the map to
-	// Chicago
 	google.maps.event.addDomListener(controlUI, 'click', function() {
 		rainbow.setNumberRange(min_density, second_max_density);
 		rainbow.setSpectrum(gradient_min_color, gradient_max_color);
@@ -79,13 +71,8 @@ function WithoutMaxControl(controlDiv, map) {
 }
 
 function WithMaxControl(controlDiv, map) {
-
-	// Set CSS styles for the DIV containing the control
-	// Setting padding to 5 px will offset the control
-	// from the edge of the map
 	controlDiv.style.padding = '5px';
 
-	// Set CSS for the control border
 	var controlUI = document.createElement('div');
 	controlUI.style.backgroundColor = 'white';
 	controlUI.style.borderStyle = 'solid';
@@ -95,7 +82,6 @@ function WithMaxControl(controlDiv, map) {
 	controlUI.title = 'Click to draw the heat map with the max';
 	controlDiv.appendChild(controlUI);
 
-	// Set CSS for the control interior
 	var controlText = document.createElement('div');
 	controlText.style.fontFamily = 'Arial,sans-serif';
 	controlText.style.fontSize = '12px';
@@ -104,8 +90,6 @@ function WithMaxControl(controlDiv, map) {
 	controlText.innerHTML = '<b>MAX</b>';
 	controlUI.appendChild(controlText);
 
-	// Setup the click event listeners: simply set the map to
-	// Chicago
 	google.maps.event.addDomListener(controlUI, 'click', function() {
 		rainbow.setNumberRange(min_density, max_density);
 		rainbow.setSpectrum(gradient_min_color, gradient_max_color);
@@ -115,13 +99,8 @@ function WithMaxControl(controlDiv, map) {
 }
 
 function PopulationControl(controlDiv, map) {
-
-	// Set CSS styles for the DIV containing the control
-	// Setting padding to 5 px will offset the control
-	// from the edge of the map
 	controlDiv.style.padding = '5px';
 
-	// Set CSS for the control border
 	var controlUI = document.createElement('div');
 	controlUI.style.backgroundColor = 'white';
 	controlUI.style.borderStyle = 'solid';
@@ -131,7 +110,6 @@ function PopulationControl(controlDiv, map) {
 	controlUI.title = 'Click to set the heat map of population/bus lines';
 	controlDiv.appendChild(controlUI);
 
-	// Set CSS for the control interior
 	var controlText = document.createElement('div');
 	controlText.style.fontFamily = 'Arial,sans-serif';
 	controlText.style.fontSize = '12px';
@@ -140,8 +118,6 @@ function PopulationControl(controlDiv, map) {
 	controlText.innerHTML = '<b>Population</b>';
 	controlUI.appendChild(controlText);
 
-	// Setup the click event listeners: simply set the map to
-	// Chicago
 	google.maps.event.addDomListener(controlUI, 'click', function() {
 		rainbow_cold.setNumberRange(min_population_density, population_median);
 		rainbow_cold.setSpectrum(cold_gradient_min_color, cold_gradient_median_color);
@@ -154,13 +130,8 @@ function PopulationControl(controlDiv, map) {
 }
 
 function TrainControl(controlDiv, map) {
-
-	// Set CSS styles for the DIV containing the control
-	// Setting padding to 5 px will offset the control
-	// from the edge of the map
 	controlDiv.style.padding = '5px';
 
-	// Set CSS for the control border
 	var controlUI = document.createElement('div');
 	controlUI.style.backgroundColor = 'white';
 	controlUI.style.borderStyle = 'solid';
@@ -170,7 +141,6 @@ function TrainControl(controlDiv, map) {
 	controlUI.title = 'Click to show the train stops';
 	controlDiv.appendChild(controlUI);
 
-	// Set CSS for the control interior
 	var controlText = document.createElement('div');
 	controlText.style.fontFamily = 'Arial,sans-serif';
 	controlText.style.fontSize = '12px';
@@ -179,8 +149,6 @@ function TrainControl(controlDiv, map) {
 	controlText.innerHTML = '<b>Train</b>';
 	controlUI.appendChild(controlText);
 
-	// Setup the click event listeners: simply set the map to
-	// Chicago
 	google.maps.event.addDomListener(controlUI, 'click', function() {
 		var j;
 		train_markers_visible = !train_markers_visible;
@@ -203,13 +171,8 @@ function TrainControl(controlDiv, map) {
 }
 
 function SubwayControl(controlDiv, map) {
-
-	// Set CSS styles for the DIV containing the control
-	// Setting padding to 5 px will offset the control
-	// from the edge of the map
 	controlDiv.style.padding = '5px';
 
-	// Set CSS for the control border
 	var controlUI = document.createElement('div');
 	controlUI.style.backgroundColor = 'white';
 	controlUI.style.borderStyle = 'solid';
@@ -219,7 +182,6 @@ function SubwayControl(controlDiv, map) {
 	controlUI.title = 'Click to show the subway stops';
 	controlDiv.appendChild(controlUI);
 
-	// Set CSS for the control interior
 	var controlText = document.createElement('div');
 	controlText.style.fontFamily = 'Arial,sans-serif';
 	controlText.style.fontSize = '12px';
@@ -228,8 +190,6 @@ function SubwayControl(controlDiv, map) {
 	controlText.innerHTML = '<b>Subway</b>';
 	controlUI.appendChild(controlText);
 
-	// Setup the click event listeners: simply set the map to
-	// Chicago
 	google.maps.event.addDomListener(controlUI, 'click', function() {
 		var j;
 		subway_markers_visible = !subway_markers_visible;
