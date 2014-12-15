@@ -1,44 +1,35 @@
-"""
-Algorithm Description:
-
-Step 1: 
-Load the coordinates for all bus stops for a given line using the official <route-id, bus stop> mapping
-
-Step 2:
-For each bus_id in bus ids:
-    For each 1-day-window/time frame:
-        For each coordinate traversed by bus_id in that window/time frame:
-            Assign the top-k closest bus stops (from the official <route-id, bus stop> mapping) to the coordinate. Add item <cordinate, route_id> to a list
-            Ignore all distances greater than a certain limit  
-        Group the coordinates that have the same route-id.
-        The route-id that has the majority of coordinates is the route id for that bus in that 1-day window.
-"""
-
 import csv
 import numpy as np
 import os
+import dateutil.parser
+from datetime import datetime
 
 DEBUG=1
-TOP_CLOSEST_PER_COORD = 30
-TOP_CLOSEST_PER_FRAME = 5
-DIST_LIMIT = 1.0
+TOP_CLOSEST_PER_COORD = 100
+INFER = 'direction' #possible values are 'direction' or 'route'
+#INFER = 'route' #possible values are 'direction' or 'route'
 out_file_path = 'C:/NYU/BigData/FinalProject/data_all_predict.csv'
 data_file_path = 'C:/NYU/BigData/FinalProject/data_all.csv'
 stops_folder = 'C:/NYU/BigData/FinalProject/linhas/'
 
 def get_majority_route(dic_routes):
     vals = dic_routes.values()
-    arr = np.zeros((len(vals)),dtype=np.int32)
-    #convert the list of coordinates to an array that contains the length of the lists only
-    for i,coords_lst in enumerate(vals):
-        arr[i] = len(coords_lst)
-        
-    idx = np.argsort(arr)[-TOP_CLOSEST_PER_FRAME:]
-    items = list(dic_routes.items())
-    ordered_items=[]
-    for i in idx[::-1]:
-        ordered_items.append(items[i])
-    return ordered_items
+    
+    arr_len = np.zeros((len(vals)),dtype=np.float32)
+    arr_dist = np.zeros((len(vals)),dtype=np.float32)
+    #convert the list of coordinates to an array that is the number of coordinates
+    for i,coords_dist_lst in enumerate(vals):
+        arr_len[i] = len(coords_dist_lst)
+        sum_dist=0
+        for coord_dist in coords_dist_lst:
+            sum_dist = sum_dist+coord_dist[1]
+        arr_dist[i] = sum_dist    
+    
+    arr_avg = arr_dist/arr_len
+    max_len = arr_len.max()
+    crit_idx = arr_len<0.7*max_len
+    arr_avg[crit_idx] = np.inf*arr_avg[crit_idx]
+    return dic_routes.keys()[arr_avg.argmin()]
 
 def create_dir_stop_dic(dir_path):
     stops_dic = {} # the final dic format is <key:route_id, value: <key:direction, value:list of stops> >    
@@ -59,7 +50,7 @@ def create_dir_stop_dic(dir_path):
         stops_lst.extend(route_lst) #merge two lists
     return stops_dic, stops_lst
 
-def add_to_file(data_rows, row_pointers, directions, file_path):
+def add_to_file(data_rows, row_pointers, file_path, route_id = None, direction=None):
     with open(file_path, 'ab') as fp:
         
         csvfile = csv.writer(fp, delimiter=',')
@@ -67,51 +58,53 @@ def add_to_file(data_rows, row_pointers, directions, file_path):
         
         for row in row_pointers:
             data = data_rows[row]
-            if len(directions)>0:
-                data['Linha Predicao'] = directions[0].split("_")[0] #get only the first route_id
-                data['Direcao'] = directions[0].split("_")[1] #get only the direction of the first route_id
-            else:
-                data['Linha Predicao'] = 'no_prediction'
-                data['Direcao'] = 'no_prediction'
+            if route_id!=None:
+                data['Linha Predicao'] = route_id #get only the first route_id
+            if direction!=None:
+                data['Direcao'] = direction #get only the first direction
+            
             lst_data.append(data.values())
         csvfile.writerows(lst_data)
 
-def infer_bus_directions(lst):
-    output_list =[]
-    for item in lst:
-        if len(stops_dic[item[0]].keys())==1:
-            output_list.append(item[0]+'_circular')
+def infer_bus_directions(dic):
+    for key,value in dic.items():
+        if len(stops_dic[key].keys())!=2:
+            return 'circular'
         else:
             #get the stops array for directions a and b separated
-            dir_a_name = stops_dic[item[0]].keys()[0] #get the first key as direction A
-            dir_b_name = stops_dic[item[0]].keys()[1]
-            stop_arr_a = np.asarray(stops_dic[item[0]][dir_a_name]) 
-            stop_arr_b = np.asarray(stops_dic[item[0]][dir_b_name])
+            dir_a_name = stops_dic[key].keys()[0] #get the first key as direction A
+            dir_b_name = stops_dic[key].keys()[1]
+            stop_arr_a = np.asarray(stops_dic[key][dir_a_name]) 
+            stop_arr_b = np.asarray(stops_dic[key][dir_b_name])
             
             seq_a = []
             seq_b = []
-            for coord in item[1]:
+            timestamps = []
+            for coord_dist in value:
+                
+                timestamps.append(coord_dist[2])   
+                coord = coord_dist[0]
                 #get the closest stop in a to coord
                 dist = np.sqrt(np.sum((coord-stop_arr_a[:,:2])**2,axis=1)) #calculate distance to the all stop coordinates
-                idx = np.argsort(dist)[0] #sort by distances and get the first index
+                idx = np.argmin(dist) #get the min distance
                 seq_a.append(stop_arr_a[idx,2]) #append the sequence
                 
                 #get the closest stop in b to coord
                 dist = np.sqrt(np.sum((coord-stop_arr_b[:,:2])**2,axis=1)) #calculate distance to the all stop coordinates
-                idx = np.argsort(dist)[0] #sort by distances and get the first index
+                idx = np.argmin(dist) #get the min distance
                 seq_b.append(stop_arr_b[idx,2]) #append the sequence
                 
             seq_a = np.asarray(seq_a)
             seq_b = np.asarray(seq_b)
-            ma = np.polyfit(np.arange(len(seq_a)), seq_a, deg=1) #fit a line for seq a
-            mb = np.polyfit(np.arange(len(seq_b)), seq_b, deg=1) #fit a line for seq b
+            timestamps = np.asarray(timestamps)
+            timestamps = timestamps - timestamps.mean() #normalize
+            ma = np.polyfit(timestamps, seq_a, deg=1) #fit a line for seq a
+            mb = np.polyfit(timestamps, seq_b, deg=1) #fit a line for seq b
             if ma[0]>mb[0]: #if equation a have a greater angle than equation b, the bus goes in direction a
-                output_list.append(item[0]+'_'+dir_a_name)
+                return dir_a_name
             else:
-                output_list.append(item[0]+'_'+dir_b_name)
-    return output_list
+                return dir_b_name
         
-from datetime import datetime
 tstart = datetime.now()
 
 print 'loading data...' 
@@ -140,16 +133,25 @@ with open(out_file_path, 'wb') as fp:
 
 dic_closest_routes = {}
 row_pointers={}
-data_rows=data_rows[:10000] #uncomment to get a smaller chunck for debugging
+#data_rows=data_rows[:10000] #uncomment to get a smaller chunk for debugging
 for j, time_row in enumerate(data_rows): #iterate in each time frame, but start from the last row of the outer loop 
     if DEBUG>=1:
         print 'step 1, iteration', j, 'of', len(data_rows)
-        t=datetime.now()
-    key = str(time_row['Onibus']) +'_' +str(time_row['Hora'])+'_' +str(time_row['DiaMes'])+'_'+str(time_row['Mes'])+'_'+str(time_row['Ano'])
-    #if key != 'B10502_11_6_1_2014': #DEBUG
+    
+    if INFER.lower()=='route':
+        key = str(time_row['Onibus']) +'_' +str(time_row['DiaMes'])+'_'+str(time_row['Mes'])+'_'+str(time_row['Ano'])
+    elif INFER.lower()=='direction':
+        if time_row['Linha'] =='': 
+            continue #skip records that do not have a route id
+        key = str(time_row['Onibus']) +'_' +str(time_row['Hora'])+'_' +str(time_row['DiaMes'])+'_'+str(time_row['Mes'])+'_'+str(time_row['Ano'])
+    else:
+        print 'INFER type not recognized. Valid options are ''route'' or ''direction'''
+        break
+    
+    #if key != 'C87019_13_6_1_2014': #DEBUG
     #    continue
-    #if time_row['Onibus'] !='C13095':
-    #    continue
+    if time_row['Onibus'] !='C87019':
+        continue
     
     if key not in dic_closest_routes:
         dic_closest_routes[key] = {}
@@ -157,28 +159,33 @@ for j, time_row in enumerate(data_rows): #iterate in each time frame, but start 
     
     row_pointers[key].append(j) #append the rows used in this key    
     coord = np.array([[float(time_row['LatitudePonto']),float(time_row['LongitudePonto'])]], np.float32) #convert coordinates to numpy array
-    if DEBUG>=2:
-        print 'others', datetime.now()-t
-        t=datetime.now()
-    dist = np.sqrt(np.sum((coord-stop_arr[:,:2])**2,axis=1)) #calculate distance to the all stop coordinates
-    if DEBUG>=2:
-        print 'calc dist', datetime.now()-t
-        t=datetime.now()
-    sorted_dist = np.argsort(dist)[:TOP_CLOSEST_PER_COORD] #sort by distances and get the first top_closest indices
-    if DEBUG>=2:
-        print 'arg sort', datetime.now()-t
-        t=datetime.now()
-    sorted_dist = sorted_dist[dist[sorted_dist]<DIST_LIMIT] #ignore all distances greater than DIST_LIMIT
-    if DEBUG>=2:
-        print 'dist limit', datetime.now()-t
-        t=datetime.now()
-    for idx in sorted_dist:
-        route_id = stops_lst[idx]['linha'] #get route id from the bus stop coordinate
-        if not route_id in  dic_closest_routes[key]:
-            dic_closest_routes[key][route_id] = [] #case the route_id key does not exists, insert it
-        dic_closest_routes[key][route_id].append(coord) #append the coordinates visited to that route
-    if DEBUG>=2:
-        print 'add to dic', datetime.now()-t
+    
+    if INFER.lower()=='route':
+        dist = np.sqrt(np.sum((coord-stop_arr[:,:2])**2,axis=1)) #calculate distance to the all stop coordinates    
+        sorted_dist = np.argsort(dist) #sort by distances and get the first top_closest indices
+        
+        dic_aux={}
+        for idx in sorted_dist:
+            route_id = stops_lst[idx]['linha'] #get route id from the bus stop coordinate
+            if route_id in dic_aux:
+                continue
+            
+            if not route_id in  dic_closest_routes[key]:
+                dic_closest_routes[key][route_id] = [] #case the route_id key does not exists, insert it
+            dic_closest_routes[key][route_id].append([coord,dist[idx],None]) #append the coordinates visited to that route and the distance to the closest point
+            
+            dic_aux[route_id] = True
+            if len(dic_aux) >=TOP_CLOSEST_PER_COORD:
+                break
+    else:
+        
+        x = dateutil.parser.parse(time_row['TimeStamp'])
+        time_diff = (datetime(x.year,x.month,x.day,x.hour,x.minute,x.second)-datetime(1970,1,1,0,0,0)).total_seconds()
+            
+        if not time_row['Linha'] in  dic_closest_routes[key]:
+            dic_closest_routes[key][time_row['Linha']] = [] #case the route_id key does not exists, insert it
+        dic_closest_routes[key][time_row['Linha']].append([coord,None,time_diff]) #append the coordinates visited to that route
+        
 #after iterating through all records, get the closest routes and directions for each key of type "bus_id + time_frame"
 i =0
 total_iter = len(dic_closest_routes.items())
@@ -186,14 +193,12 @@ for key, value in dic_closest_routes.items():
     i=i+1
     if DEBUG>=1:
         print 'step 2, iteration', i, 'of', total_iter
-    closest_routes = get_majority_route(value)
-    route_ids_directions = infer_bus_directions(closest_routes)
-    add_to_file(data_rows, row_pointers[key], route_ids_directions, out_file_path)
-    
-#print the results
-#print '<busId_day_month_year, list(route_id + direction) >'
-#for item in bus_time_cleaned.items():
-#    print item             
+    if INFER.lower() =='route':
+        route_id = get_majority_route(value)
+        add_to_file(data_rows, row_pointers[key], out_file_path, route_id=route_id, direction=None)
+    else:
+        direction = infer_bus_directions(value)
+        add_to_file(data_rows, row_pointers[key], out_file_path, route_id=None, direction=direction)           
 
 print 'total time', datetime.now()-tstart
 print 'finished'
